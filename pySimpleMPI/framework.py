@@ -1,3 +1,5 @@
+from . import validation
+
 from mpi4py import MPI
 
 work_tag=0
@@ -58,6 +60,9 @@ def boss(boss_class):
     boss_class.process_all_results(results)
 
 def run_MPI(boss_class, worker_class):
+    validation.validate_boss_class(boss_class)
+    validation.validate_worker_class(worker_class)
+    
     rank = MPI.COMM_WORLD.Get_rank()
     name = MPI.Get_processor_name()
 
