@@ -7,4 +7,5 @@ setup(name='pySimpleMPI',
       author='Shawn Taylor',
       author_email='shawntaylor@weecology.org',
       license='MIT',
+      packages=['pySimpleMPI'],
       zip_safe=False)
