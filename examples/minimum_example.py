@@ -21,6 +21,9 @@ class ExampleBoss:
         self.job_list=list(range(10))
         self.total_jobs = len(self.job_list)
     
+    def set_total_jobs(self):
+        self.total_jobs = len(self.job_list)
+
     def jobs_available(self):
         return len(self.job_list)>0
         

@@ -8,7 +8,7 @@ def validate_worker_class(worker_class):
     assert len(missing_methods)==0, 'Missing required worker methods: ' + str(missing_methods)
 
 def validate_boss_class(boss_class):
-    required_methods=['setup','jobs_available','get_next_job',
+    required_methods=['setup','jobs_available','get_next_job','set_total_jobs',
                       'process_job_result', 'process_all_results']
     available_methods = dir(boss_class)
     

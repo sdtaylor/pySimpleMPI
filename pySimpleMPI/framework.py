@@ -25,6 +25,7 @@ def boss(boss_class):
     num_workers = MPI.COMM_WORLD.Get_size()
 
     boss_class.setup()
+    boss_class.set_total_jobs()
     
     #Dole out the first round of jobs to all workers
     for i in range(1, num_workers):
@@ -72,5 +73,3 @@ def run_MPI(boss_class, worker_class):
     else:
         print('worker '+str(rank)+' on '+str(name))
         worker(worker_class)
-
-
