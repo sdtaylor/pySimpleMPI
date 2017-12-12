@@ -33,5 +33,5 @@ class ExampleBoss:
     def process_all_results(self, all_results):
         pass
         
-if __name__ == "__main__":
-    run_MPI(ExampleBoss(), ExampleWorker())
+#if __name__ == "__main__":
+#    run_MPI(ExampleBoss(), ExampleWorker())
