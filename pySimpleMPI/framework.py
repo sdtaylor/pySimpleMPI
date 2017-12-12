@@ -5,7 +5,7 @@ from mpi4py import MPI
 work_tag=0
 stop_tag=1
 
-def worker(worker_class):
+def worker_MPI(worker_class):
     comm = MPI.COMM_WORLD
     status = MPI.Status()
         
@@ -19,7 +19,7 @@ def worker(worker_class):
         
         comm.send(obj=job_results, dest=0)
 
-def boss(boss_class):
+def boss_MPI(boss_class):
     comm = MPI.COMM_WORLD
     status = MPI.Status()
     num_workers = MPI.COMM_WORLD.Get_size()
@@ -69,7 +69,25 @@ def run_MPI(boss_class, worker_class):
 
     if rank == 0:
         print('boss '+str(rank)+' on '+str(name))
-        boss(boss_class)
+        boss_MPI(boss_class)
     else:
         print('worker '+str(rank)+' on '+str(name))
-        worker(worker_class)
+        worker_MPI(worker_class)
+        
+
+def run_parallel(boss_class, worker_class):
+    validation.validate_boss_class(boss_class)
+    validation.validate_worker_class(worker_class)
+
+    boss_class.setup()
+    boss_class.set_total_jobs()
+    worker_class.setup()
+    
+    # Need a way to run multiple instances of worker_class()
+    # in native python parallelism
+    
+    results=[]
+    total_jobs = boss_class.total_jobs
+    jobs_completed = 0
+    while boss_class.jobs_available():
+        pass
