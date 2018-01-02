@@ -1,3 +1,4 @@
+import logging
 from . import validation
 
 from mpi4py import MPI
@@ -7,10 +8,13 @@ stop_tag=1
 job_successful_tag = 4
 job_failed_tag = 5
 
-def worker(worker_class):
+logger = logging.getLevelName(__name__)
+
+def worker(worker_class, worker_name):
     comm = MPI.COMM_WORLD
     status = MPI.Status()
-        
+    
+    logger.info('Seting up on ' + worker_name)
     worker_class.setup()
     
     while True:
@@ -20,7 +24,8 @@ def worker(worker_class):
         try:
             job_results = worker_class.run_job(job_details)
             result_tag = job_successful_tag
-        except:
+        except Exception as e:
+            logger.error('Failed job on ' + worker_name + '\n' + str(e))
             job_results = worker_class.get_failed_job_result(job_details)
             result_tag = job_failed_tag
         
@@ -58,7 +63,7 @@ def boss(boss_class):
         comm.send(obj=next_job, dest=status.Get_source(), tag=work_tag)
     
         jobs_completed+=1
-        print('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
+        logger.info('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
         
     #Collect last jobs
     for i in range(1, num_workers):
@@ -82,9 +87,9 @@ def run_MPI(boss_class, worker_class):
     name = MPI.Get_processor_name()
 
     if rank == 0:
-        print('boss '+str(rank)+' on '+str(name))
+        logger.info('boss '+str(rank)+' on '+str(name))
         boss(boss_class)
     else:
-        print('worker '+str(rank)+' on '+str(name))
-        worker(worker_class)
+        logger.info('worker '+str(rank)+' on '+str(name))
+        worker(worker_class, worker_name='worker'+str(rank)+'_'+str(name))
 
