@@ -22,14 +22,16 @@ def worker(worker_class, worker_name):
         job_details = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag() == stop_tag: break
 
+        logger.info('Running job on ' + worker_name)
         try:
             job_results = worker_class.run_job(job_details)
             result_tag = job_successful_tag
         except Exception as e:
             full_traceback = traceback.format_exc()
-            logger.error('Failed job on ' + worker_name + '\n' + str(full_traceback))
+            logger.info('Failed job on ' + worker_name + '\n' + str(full_traceback))
             job_results = worker_class.get_failed_job_result(job_details)
             result_tag = job_failed_tag
+            logger.info('Failed job caught on ' + worker_name + '. Moving on.')
         
         comm.send(obj=job_results, dest=0, tag=result_tag)
 
