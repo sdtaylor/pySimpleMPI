@@ -5,6 +5,9 @@ class ExampleWorker:
     def __init__(self):
         pass
 
+    def get_failed_job_result(self):
+        pass
+
     def setup(self):
         print('seting things up')
     
@@ -32,8 +35,11 @@ class ExampleBoss:
     
     def process_job_result(self, result):
         pass
+    
+    def process_failed_job(self, result):
+        pass
 
-    def process_all_results(self, all_results):
+    def process_all_results(self):
         pass
         
 if __name__ == "__main__":

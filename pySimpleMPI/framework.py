@@ -4,6 +4,8 @@ from mpi4py import MPI
 
 work_tag=0
 stop_tag=1
+job_successful_tag = 4
+job_failed_tag = 5
 
 def worker(worker_class):
     comm = MPI.COMM_WORLD
@@ -15,9 +17,14 @@ def worker(worker_class):
         job_details = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag() == stop_tag: break
 
-        job_results = worker_class.run_job(job_details)
+        try:
+            job_results = worker_class.run_job(job_details)
+            result_tag = job_successful_tag
+        except:
+            job_results = worker_class.get_failed_job_result()
+            result_tag = job_failed_tag
         
-        comm.send(obj=job_results, dest=0)
+        comm.send(obj=job_results, dest=0, tag=result_tag)
 
 def boss(boss_class):
     comm = MPI.COMM_WORLD
@@ -42,7 +49,11 @@ def boss(boss_class):
     #Collect results and assign new jobs as others are finished.
     while boss_class.jobs_available():
         job_result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-        results.append(job_result)
+        if status.Get_tag() == job_failed_tag:
+            boss_class.process_failed_job(job_result)
+        elif status.Get_tag() == job_successful_tag:
+            boss_class.process_job_result(job_result)
+                 
         next_job = boss_class.get_next_job()
         comm.send(obj=next_job, dest=status.Get_source(), tag=work_tag)
     
