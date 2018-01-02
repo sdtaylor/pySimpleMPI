@@ -21,7 +21,7 @@ def worker(worker_class):
             job_results = worker_class.run_job(job_details)
             result_tag = job_successful_tag
         except:
-            job_results = worker_class.get_failed_job_result()
+            job_results = worker_class.get_failed_job_result(job_details)
             result_tag = job_failed_tag
         
         comm.send(obj=job_results, dest=0, tag=result_tag)

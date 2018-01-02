@@ -5,8 +5,8 @@ class ExampleWorker:
     def __init__(self):
         pass
 
-    def get_failed_job_result(self):
-        pass
+    def get_failed_job_result(self, job_details):
+        return None
 
     def setup(self):
         print('seting things up')
