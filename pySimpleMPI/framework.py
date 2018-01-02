@@ -8,7 +8,7 @@ stop_tag=1
 job_successful_tag = 4
 job_failed_tag = 5
 
-logger = logging.getLevelName(__name__)
+logger = logging.getLogger(__name__)
 
 def worker(worker_class, worker_name):
     comm = MPI.COMM_WORLD
