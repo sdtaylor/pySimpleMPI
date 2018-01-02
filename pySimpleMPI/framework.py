@@ -1,4 +1,5 @@
 import logging
+import traceback
 from . import validation
 
 from mpi4py import MPI
@@ -25,7 +26,8 @@ def worker(worker_class, worker_name):
             job_results = worker_class.run_job(job_details)
             result_tag = job_successful_tag
         except Exception as e:
-            logger.error('Failed job on ' + worker_name + '\n' + str(e))
+            full_traceback = traceback.format_exc()
+            logger.error('Failed job on ' + worker_name + '\n' + str(full_traceback))
             job_results = worker_class.get_failed_job_result(job_details)
             result_tag = job_failed_tag
         
