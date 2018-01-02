@@ -1,4 +1,3 @@
-import logging
 import traceback
 from . import validation
 
@@ -9,29 +8,28 @@ stop_tag=1
 job_successful_tag = 4
 job_failed_tag = 5
 
-logger = logging.getLogger(__name__)
 
 def worker(worker_class, worker_name):
     comm = MPI.COMM_WORLD
     status = MPI.Status()
     
-    logger.info('Seting up on ' + worker_name)
+    print('Seting up on ' + worker_name)
     worker_class.setup()
     
     while True:
         job_details = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
         if status.Get_tag() == stop_tag: break
 
-        logger.info('Running job on ' + worker_name)
+        print('Running job on ' + worker_name)
         try:
             job_results = worker_class.run_job(job_details)
             result_tag = job_successful_tag
         except Exception as e:
             full_traceback = traceback.format_exc()
-            logger.info('Failed job on ' + worker_name + '\n' + str(full_traceback))
+            print('Failed job on ' + worker_name + '\n' + str(full_traceback))
             job_results = worker_class.get_failed_job_result(job_details)
             result_tag = job_failed_tag
-            logger.info('Failed job caught on ' + worker_name + '. Moving on.')
+            print('Failed job caught on ' + worker_name + '. Moving on.')
         
         comm.send(obj=job_results, dest=0, tag=result_tag)
 
@@ -51,7 +49,6 @@ def boss(boss_class):
             break
         comm.send(obj=next_job, dest=i, tag=work_tag)
     
-    results=[]
     total_jobs = boss_class.total_jobs
     jobs_completed = 0
     #While there are new jobs to assign.
@@ -67,7 +64,7 @@ def boss(boss_class):
         comm.send(obj=next_job, dest=status.Get_source(), tag=work_tag)
     
         jobs_completed+=1
-        logger.info('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
+        print('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
         
     #Collect last jobs
     for i in range(1, num_workers):
@@ -91,9 +88,9 @@ def run_MPI(boss_class, worker_class):
     name = MPI.Get_processor_name()
 
     if rank == 0:
-        logger.info('boss '+str(rank)+' on '+str(name))
+        print('boss '+str(rank)+' on '+str(name))
         boss(boss_class)
     else:
-        logger.info('worker '+str(rank)+' on '+str(name))
+        print('worker '+str(rank)+' on '+str(name))
         worker(worker_class, worker_name='worker'+str(rank)+'_'+str(name))
 
