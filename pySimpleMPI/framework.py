@@ -62,14 +62,17 @@ def boss(boss_class):
         
     #Collect last jobs
     for i in range(1, num_workers):
-        job_result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
-        results.append(job_result)
-        
+        job_result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+        if status.Get_tag() == job_failed_tag:
+            boss_class.process_failed_job(job_result)
+        elif status.Get_tag() == job_successful_tag:
+            boss_class.process_job_result(job_result)
+
     #Shut down all workers
     for i in range(1, num_workers):
         comm.send(obj=None, dest=i, tag=stop_tag)
         
-    boss_class.process_all_results(results)
+    boss_class.process_all_results()
 
 def run_MPI(boss_class, worker_class):
     validation.validate_boss_class(boss_class)
@@ -84,3 +87,4 @@ def run_MPI(boss_class, worker_class):
     else:
         print('worker '+str(rank)+' on '+str(name))
         worker(worker_class)
+
