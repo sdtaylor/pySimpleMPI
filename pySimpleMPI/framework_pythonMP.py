@@ -96,7 +96,6 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
         
         job_queue.put(Job_wrapper(job_details=boss_class.get_next_job()))
         jobs_completed += 1
-        print('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
         print('Completed job {n} of {n_total} in {s} seconds'.format(n=jobs_completed,
                                                                      n_total=total_jobs,
                                                                      s=job_timings[-1]))
