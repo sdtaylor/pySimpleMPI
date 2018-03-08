@@ -99,7 +99,7 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
         print('Completed job {n} of {n_total} in {s} seconds'.format(n=jobs_completed,
                                                                      n_total=total_jobs,
                                                                      s=job_timings[-1]))
-        time_remaining = round(np.mean(job_timings)/60/60, 2)
+        time_remaining = round(np.mean(job_timings)/60/60, 2) * (total_jobs - jobs_completed)
         print('Estimated time remaining: {h} hours'.format(h=time_remaining))
         sys.stdout.flush()
         
