@@ -2,17 +2,29 @@ from multiprocessing import Process, Queue
 import traceback
 from . import validation
 import sys
+import time
+import numpy as np
 
-stop_tag = 1
 
-def had_error(result_object):
-    return isinstance(result_object, dict) and 'pySimpleMPI_error' in result_object
-
-def unpack_error(result_object):
-    return result_object['pySimpleMPI_error']
-
-def pack_error(result_object):
-    return {'pySimpleMPI_error':result_object}
+class Job_wrapper:
+    def __init__(self, job_details, work_stopper=False):
+        self.job_details = job_details
+        self.had_error = False
+        self.work_stopper = work_stopper
+        self.total_time=0
+        self.job_results=None
+        
+    def start_clock(self):
+        self.start_time = time.time()
+    
+    def stop_clock(self):
+        self.total_time = round(time.time() - self.start_time,2)
+        
+    def flag_error(self):
+        self.had_error = True
+        
+    def load_result(self, job_result):
+        self.job_result = job_result
 
 class worker_wrapper_pythonmp:
     def __init__(self, Worker_class, job_q, results_q):
@@ -24,21 +36,24 @@ class worker_wrapper_pythonmp:
         
     def run_job(self, job_q, results_q):
         while True:
-            job_details = job_q.get()
+            job = job_q.get()
             
-            if job_details == stop_tag:
+            if job.work_stopper:
                 break
             
             print('Running job')
             try:
-                job_results = self.worker_class.run_job(job_details)
-                results_q.put(job_results)
+                job.start_clock()
+                job.load_result(self.worker_class.run_job(job.job_details))
+                job.stop_clock()
+                results_q.put(job)
             except Exception as e:
                 full_traceback = traceback.format_exc()
                 print('Failed job on \n' + str(full_traceback))
-                job_results = self.worker_class.get_failed_job_result(job_details)
+                job.load_result(self.worker_class.get_failed_job_result(job.job_details))
+                job.flag_error()
                 print('Failed job caught, moving on.')
-                results_q.put(pack_error(job_results))
+                results_q.put(job)
 
             sys.stdout.flush()
             
@@ -56,10 +71,12 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     boss_class.setup()
     boss_class.set_total_jobs()
     
+    job_timings=[]
     # Dole out first round of jobs
     for i in range(n_procs):
         if boss_class.jobs_available:
-            job_queue.put(boss_class.get_next_job())
+            job = Job_wrapper(job_details = boss_class.get_next_job())
+            job_queue.put(job)
         else:
             break
         
@@ -68,20 +85,29 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     
     # Process and dole out jobs until none are left
     while boss_class.jobs_available():
-        job_result = results_queue.get()
-        if had_error(job_result):
-            boss_class.process_failed_job(unpack_error(job_result))
+        job = results_queue.get()
+        if job.had_error:
+            boss_class.process_failed_job(job.job_result)
+            job_timings.append(1)
         else:
-            boss_class.process_job_result(job_result)
+            boss_class.process_job_result(job.job_result)
+            job_timings.append(job.total_time)
         
-        job_queue.put(boss_class.get_next_job())
+        
+        job_queue.put(Job_wrapper(job_details=boss_class.get_next_job()))
         jobs_completed += 1
         print('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
+        print('Completed job {n} of {n_total} in {s} seconds'.format(n=jobs_completed,
+                                                                     n_total=total_jobs,
+                                                                     s=job_timings[-1]))
+        time_remaining = round(np.mean(job_timings)/60/60, 2)
+        print('Estimated time remaining: {h} hours'.format(h=time_remaining))
         sys.stdout.flush()
         
     # Shutdown signal for all workers
+    stop_job = Job_wrapper(job_details=None, work_stopper=True)
     for i in range(n_procs):
-        job_queue.put(stop_tag)
+        job_queue.put(stop_job)
     
     # Wait for them all to finish
     for w in workers:
@@ -89,11 +115,11 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     
     # Collect last jobs
     while not results_queue.empty():
-        job_result = results_queue.get()
-        if had_error(job_result):
-            boss_class.process_failed_job(unpack_error(job_result))
+        job = results_queue.get()
+        if job.had_error:
+            boss_class.process_failed_job(job.job_result)
         else:
-            boss_class.process_job_result(job_result)
+            boss_class.process_job_result(job.job_result)
     
     boss_class.process_all_results()
 
