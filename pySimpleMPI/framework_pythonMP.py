@@ -1,6 +1,7 @@
 from multiprocessing import Process, Queue
 import traceback
 from . import validation
+import sys
 
 stop_tag = 1
 
@@ -39,6 +40,8 @@ class worker_wrapper_pythonmp:
                 print('Failed job caught, moving on.')
                 results_q.put(pack_error(job_results))
 
+            sys.stdout.flush()
+            
     def join(self):
         self.process.join()
 
@@ -67,13 +70,14 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     while boss_class.jobs_available():
         job_result = results_queue.get()
         if had_error(job_result):
-            boss_class.process_failed_job(job_result)
+            boss_class.process_failed_job(unpack_error(job_result))
         else:
             boss_class.process_job_result(job_result)
         
         job_queue.put(boss_class.get_next_job())
         jobs_completed += 1
         print('Completed job '+str(jobs_completed)+' of '+str(total_jobs))
+        sys.stdout.flush()
         
     # Shutdown signal for all workers
     for i in range(n_procs):
@@ -87,7 +91,7 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     while not results_queue.empty():
         job_result = results_queue.get()
         if had_error(job_result):
-            boss_class.process_failed_job(job_result)
+            boss_class.process_failed_job(unpack_error(job_result))
         else:
             boss_class.process_job_result(job_result)
     
