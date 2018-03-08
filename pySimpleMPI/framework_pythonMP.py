@@ -16,6 +16,7 @@ def pack_error(result_object):
 class worker_wrapper_pythonmp:
     def __init__(self, Worker_class, job_q, results_q):
         self.worker_class = Worker_class()
+        self.worker_class.setup()
         self.process = Process(target=self.run_job, args=(job_q, results_q))
         self.running=True
         self.process.start()
