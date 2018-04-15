@@ -39,6 +39,7 @@ class worker_wrapper_pythonmp:
             job = job_q.get()
             
             if job.work_stopper:
+                results_q.put(job)
                 break
             
             print('Running job')
@@ -57,9 +58,6 @@ class worker_wrapper_pythonmp:
 
             sys.stdout.flush()
             
-    def join(self):
-        self.process.join()
-
     
 def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     job_queue = Queue()
@@ -107,15 +105,14 @@ def boss_wrapper_pythonmp(Boss_class, Worker_class, n_procs):
     stop_job = Job_wrapper(job_details=None, work_stopper=True)
     for i in range(n_procs):
         job_queue.put(stop_job)
-    
-    # Wait for them all to finish
-    for w in workers:
-        w.join()
-    
-    # Collect last jobs
-    while not results_queue.empty():
+
+    # Collect last jobs and track finished workers
+    stopped_workers = 0
+    while stopped_workers < n_procs:
         job = results_queue.get()
-        if job.had_error:
+        if job.work_stopper:
+            stopped_workers+=1
+        elif job.had_error:
             boss_class.process_failed_job(job.job_result)
         else:
             boss_class.process_job_result(job.job_result)
