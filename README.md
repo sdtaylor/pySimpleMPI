@@ -1,6 +1,7 @@
 # pySimpleMPI
 Functions for running embarrassingly simple parallel tasks with MPI in python
 
+**Hi, don't use this package. MPI is outdated, especially for python. Use [dask](https://dask.org/) instead.**
 
 ## Installation
 This uses `mpi4py` which you can get from most channels.  
